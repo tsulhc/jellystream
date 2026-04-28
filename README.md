@@ -213,7 +213,7 @@ Release packages are stored under `repository/`. The manifest points to the late
 For an AceStream server exposed at:
 
 ```text
-https://acestream.gianni.re
+https://acestream.example.com
 ```
 
 Open:
@@ -225,8 +225,8 @@ Dashboard -> Plugins -> My Plugins -> Jellystream -> Settings
 Use these values:
 
 ```text
-AceStream API base URL: https://acestream.gianni.re
-AceStream playback base URL: https://acestream.gianni.re
+AceStream API base URL: https://acestream.example.com
+AceStream playback base URL: https://acestream.example.com
 Playback URL template: /ace/getstream?id={contentId}
 Stream output preference: Auto
 Enable Fire TV compatibility mode: enabled
@@ -237,7 +237,7 @@ Maximum concurrent streams: 2
 
 Keep proxying enabled for Fire TV. The Fire TV app will request streams from Jellyfin, and Jellyfin will fetch AceStream server-side.
 
-If your AceStream bridge uses a different route, change only `Playback URL template`. For example, if direct playback works at `https://acestream.gianni.re/stream/CONTENT_ID`, use:
+If your AceStream bridge uses a different route, change only `Playback URL template`. For example, if direct playback works at `https://acestream.example.com/stream/CONTENT_ID`, use:
 
 ```text
 /stream/{contentId}

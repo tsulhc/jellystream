@@ -14,7 +14,7 @@
                     <div class="inputContainer">
                         <label class="inputLabel inputLabelUnfocused" for="AceStreamApiBaseUrl">AceStream API base URL</label>
                         <input is="emby-input" id="AceStreamApiBaseUrl" name="AceStreamApiBaseUrl" type="url" required />
-                        <div class="fieldDescription">Example: <code>https://acestream.gianni.re</code></div>
+                        <div class="fieldDescription">Example: <code>https://acestream.example.com</code></div>
                     </div>
 
                     <div class="inputContainer">
@@ -116,8 +116,8 @@
                 function loadConfig(page) {
                     Dashboard.showLoadingMsg();
                     ApiClient.getPluginConfiguration(pluginId).then(function (config) {
-                        setValue(page, 'AceStreamApiBaseUrl', config.AceStreamApiBaseUrl || 'https://acestream.gianni.re');
-                        setValue(page, 'AceStreamPlaybackBaseUrl', config.AceStreamPlaybackBaseUrl || 'https://acestream.gianni.re');
+                        setValue(page, 'AceStreamApiBaseUrl', config.AceStreamApiBaseUrl || 'http://127.0.0.1:6878');
+                        setValue(page, 'AceStreamPlaybackBaseUrl', config.AceStreamPlaybackBaseUrl || 'http://127.0.0.1:6878');
                         setValue(page, 'PlaybackUrlTemplate', config.PlaybackUrlTemplate || '/ace/getstream?id={contentId}');
                         setValue(page, 'PlaylistStreamMode', config.PlaylistStreamMode == null ? 0 : config.PlaylistStreamMode);
                         setValue(page, 'StreamOutputPreference', config.StreamOutputPreference == null ? 0 : config.StreamOutputPreference);
