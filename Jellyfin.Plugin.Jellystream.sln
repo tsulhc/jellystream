@@ -1,0 +1,18 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Jellyfin.Plugin.Jellystream", "Jellyfin.Plugin.Jellystream\Jellyfin.Plugin.Jellystream.csproj", "{E6C4B057-7565-4B2F-8A78-5339175D487E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E6C4B057-7565-4B2F-8A78-5339175D487E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E6C4B057-7565-4B2F-8A78-5339175D487E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E6C4B057-7565-4B2F-8A78-5339175D487E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E6C4B057-7565-4B2F-8A78-5339175D487E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
