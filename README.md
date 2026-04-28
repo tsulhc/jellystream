@@ -208,6 +208,41 @@ After adding the repository, open the plugin catalog, install `Jellystream`, and
 
 Release packages are stored under `repository/`. The manifest points to the latest compatible zip and includes Jellyfin's required MD5 checksum.
 
+## Configure AceStream
+
+For an AceStream server exposed at:
+
+```text
+https://acestream.gianni.re
+```
+
+Open:
+
+```text
+Dashboard -> Plugins -> My Plugins -> Jellystream -> Settings
+```
+
+Use these values:
+
+```text
+AceStream API base URL: https://acestream.gianni.re
+AceStream playback base URL: https://acestream.gianni.re
+Playback URL template: /ace/getstream?id={contentId}
+Stream output preference: Auto
+Enable Fire TV compatibility mode: enabled
+Proxy streams through Jellyfin: enabled
+Prebuffer timeout seconds: 15
+Maximum concurrent streams: 2
+```
+
+Keep proxying enabled for Fire TV. The Fire TV app will request streams from Jellyfin, and Jellyfin will fetch AceStream server-side.
+
+If your AceStream bridge uses a different route, change only `Playback URL template`. For example, if direct playback works at `https://acestream.gianni.re/stream/CONTENT_ID`, use:
+
+```text
+/stream/{contentId}
+```
+
 ## Package A Release
 
 Create a local release zip and checksum with:

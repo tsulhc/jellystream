@@ -8,6 +8,14 @@
     "category": "LiveTV",
     "versions": [
       {
+        "version": "0.1.1.0",
+        "changelog": "Add Jellyfin dashboard configuration page for AceStream URLs, Fire TV mode, stream proxying and inline M3U.",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/tsulhc/jellystream/main/repository/jellystream_0.1.1.0.zip",
+        "checksum": "0538911737b5603c47dd376598bb6b90",
+        "timestamp": "2026-04-28T12:00:00Z"
+      },
+      {
         "version": "0.1.0.0",
         "changelog": "Initial Fire TV-first MVP with M3U, healthcheck and proxied stream endpoints.",
         "targetAbi": "10.11.0.0",

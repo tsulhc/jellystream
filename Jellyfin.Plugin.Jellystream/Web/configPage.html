@@ -9,13 +9,139 @@
             <div class="content-primary">
                 <h1>Jellystream</h1>
                 <p>Fire TV-first AceStream integration for Jellyfin.</p>
-                <p>This MVP exposes API endpoints first. A full configuration UI will be added after the server-side playback path is validated.</p>
+
+                <form id="JellystreamConfigForm">
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="AceStreamApiBaseUrl">AceStream API base URL</label>
+                        <input is="emby-input" id="AceStreamApiBaseUrl" name="AceStreamApiBaseUrl" type="url" required />
+                        <div class="fieldDescription">Example: <code>https://acestream.gianni.re</code></div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="AceStreamPlaybackBaseUrl">AceStream playback base URL</label>
+                        <input is="emby-input" id="AceStreamPlaybackBaseUrl" name="AceStreamPlaybackBaseUrl" type="url" required />
+                        <div class="fieldDescription">Usually the same value as the API base URL.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="PlaybackUrlTemplate">Playback URL template</label>
+                        <input is="emby-input" id="PlaybackUrlTemplate" name="PlaybackUrlTemplate" type="text" required />
+                        <div class="fieldDescription">Default: <code>/ace/getstream?id={contentId}</code>. Change this only if your AceStream bridge uses another route.</div>
+                    </div>
+
+                    <div class="selectContainer">
+                        <label class="selectLabel" for="StreamOutputPreference">Stream output preference</label>
+                        <select is="emby-select" id="StreamOutputPreference" name="StreamOutputPreference">
+                            <option value="0">Auto</option>
+                            <option value="1">HLS</option>
+                            <option value="2">MPEG-TS</option>
+                        </select>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label>
+                            <input is="emby-checkbox" id="FireTvCompatibilityMode" name="FireTvCompatibilityMode" type="checkbox" />
+                            <span>Enable Fire TV compatibility mode</span>
+                        </label>
+                        <div class="fieldDescription checkboxFieldDescription">Keep this enabled for the official Jellyfin Fire TV app.</div>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label>
+                            <input is="emby-checkbox" id="ProxyStreams" name="ProxyStreams" type="checkbox" />
+                            <span>Proxy streams through Jellyfin</span>
+                        </label>
+                        <div class="fieldDescription checkboxFieldDescription">Recommended for Fire TV, Docker, reverse proxies, and private AceStream endpoints.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="PrebufferTimeoutSeconds">Prebuffer timeout seconds</label>
+                        <input is="emby-input" id="PrebufferTimeoutSeconds" name="PrebufferTimeoutSeconds" type="number" min="5" max="120" />
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="MaxConcurrentStreams">Maximum concurrent streams</label>
+                        <input is="emby-input" id="MaxConcurrentStreams" name="MaxConcurrentStreams" type="number" min="1" max="20" />
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="InlineM3U">Inline M3U playlist</label>
+                        <textarea is="emby-textarea" id="InlineM3U" name="InlineM3U" rows="10"></textarea>
+                        <div class="fieldDescription">Paste AceStream channels here while remote playlist management is still minimal.</div>
+                    </div>
+
+                    <div>
+                        <button is="emby-button" type="submit" class="raised button-submit block">
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </form>
+
+                <h2>Endpoints</h2>
                 <ul>
                     <li>M3U endpoint: <code>/Jellystream/Playlist.m3u</code></li>
                     <li>Healthcheck endpoint: <code>/Jellystream/Health</code></li>
                 </ul>
             </div>
         </div>
+
+        <script type="text/javascript">
+            (function () {
+                const pluginId = '6f8c2f25-f25f-4f49-92c5-04c4b5df4102';
+
+                function setValue(page, id, value) {
+                    page.querySelector('#' + id).value = value == null ? '' : value;
+                }
+
+                function setChecked(page, id, value) {
+                    page.querySelector('#' + id).checked = !!value;
+                }
+
+                function loadConfig(page) {
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        setValue(page, 'AceStreamApiBaseUrl', config.AceStreamApiBaseUrl || 'https://acestream.gianni.re');
+                        setValue(page, 'AceStreamPlaybackBaseUrl', config.AceStreamPlaybackBaseUrl || 'https://acestream.gianni.re');
+                        setValue(page, 'PlaybackUrlTemplate', config.PlaybackUrlTemplate || '/ace/getstream?id={contentId}');
+                        setValue(page, 'StreamOutputPreference', config.StreamOutputPreference == null ? 0 : config.StreamOutputPreference);
+                        setChecked(page, 'FireTvCompatibilityMode', config.FireTvCompatibilityMode !== false);
+                        setChecked(page, 'ProxyStreams', config.ProxyStreams !== false);
+                        setValue(page, 'PrebufferTimeoutSeconds', config.PrebufferTimeoutSeconds || 15);
+                        setValue(page, 'MaxConcurrentStreams', config.MaxConcurrentStreams || 2);
+                        setValue(page, 'InlineM3U', config.InlineM3U || '#EXTM3U');
+                        Dashboard.hideLoadingMsg();
+                    });
+                }
+
+                document.querySelector('#JellystreamConfigPage').addEventListener('pageshow', function () {
+                    loadConfig(this);
+                });
+
+                document.querySelector('#JellystreamConfigForm').addEventListener('submit', function (event) {
+                    event.preventDefault();
+                    const form = this;
+                    const page = form.closest('.page');
+                    Dashboard.showLoadingMsg();
+
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        config.AceStreamApiBaseUrl = form.AceStreamApiBaseUrl.value.trim();
+                        config.AceStreamPlaybackBaseUrl = form.AceStreamPlaybackBaseUrl.value.trim();
+                        config.PlaybackUrlTemplate = form.PlaybackUrlTemplate.value.trim();
+                        config.StreamOutputPreference = parseInt(form.StreamOutputPreference.value, 10);
+                        config.FireTvCompatibilityMode = form.FireTvCompatibilityMode.checked;
+                        config.ProxyStreams = form.ProxyStreams.checked;
+                        config.PrebufferTimeoutSeconds = parseInt(form.PrebufferTimeoutSeconds.value, 10) || 15;
+                        config.MaxConcurrentStreams = parseInt(form.MaxConcurrentStreams.value, 10) || 2;
+                        config.InlineM3U = form.InlineM3U.value || '#EXTM3U';
+
+                        ApiClient.updatePluginConfiguration(pluginId, config).then(function () {
+                            Dashboard.processPluginConfigurationUpdateResult();
+                            loadConfig(page);
+                        });
+                    });
+                });
+            })();
+        </script>
     </div>
 </body>
 </html>
