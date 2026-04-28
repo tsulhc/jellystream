@@ -228,14 +228,17 @@ Use these values:
 AceStream API base URL: https://acestream.example.com
 AceStream playback base URL: https://acestream.example.com
 Playback URL template: /ace/getstream?id={contentId}
+Playlist stream mode: Direct AceStream URL
 Stream output preference: Auto
 Enable Fire TV compatibility mode: enabled
-Proxy streams through Jellyfin: enabled
+Proxy diagnostic stream endpoint: disabled
 Prebuffer timeout seconds: 15
 Maximum concurrent streams: 2
 ```
 
-Keep proxying enabled for Fire TV. The Fire TV app will request streams from Jellyfin, and Jellyfin will fetch AceStream server-side.
+`Playlist stream mode` affects only Jellystream Live TV channels. It does not change Jellyfin playback settings for movies or series.
+
+For Docker deployments with an externally reachable AceStream bridge, `Direct AceStream URL` lets Jellyfin manage the source exactly like a normal M3U tuner source.
 
 If your AceStream bridge uses a different route, change only `Playback URL template`. For example, if direct playback works at `https://acestream.example.com/stream/CONTENT_ID`, use:
 
