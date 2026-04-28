@@ -30,6 +30,16 @@
                     </div>
 
                     <div class="selectContainer">
+                        <label class="selectLabel" for="PlaylistStreamMode">Playlist stream mode</label>
+                        <select is="emby-select" id="PlaylistStreamMode" name="PlaylistStreamMode">
+                            <option value="0">Direct AceStream URL</option>
+                            <option value="1">Proxy through Jellyfin</option>
+                            <option value="2">Redirect through Jellystream</option>
+                        </select>
+                        <div class="fieldDescription">Use Direct AceStream URL for this Docker setup. It affects only Jellystream Live TV channels, not movies or series playback.</div>
+                    </div>
+
+                    <div class="selectContainer">
                         <label class="selectLabel" for="StreamOutputPreference">Stream output preference</label>
                         <select is="emby-select" id="StreamOutputPreference" name="StreamOutputPreference">
                             <option value="0">Auto</option>
@@ -49,9 +59,15 @@
                     <div class="checkboxContainer checkboxContainer-withDescription">
                         <label>
                             <input is="emby-checkbox" id="ProxyStreams" name="ProxyStreams" type="checkbox" />
-                            <span>Proxy streams through Jellyfin</span>
+                            <span>Proxy diagnostic stream endpoint</span>
                         </label>
-                        <div class="fieldDescription checkboxFieldDescription">Recommended for Fire TV, Docker, reverse proxies, and private AceStream endpoints.</div>
+                        <div class="fieldDescription checkboxFieldDescription">Only affects <code>/Jellystream/StreamByContentId/...</code>. Playlist behavior is controlled by Playlist stream mode.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="UpstreamUserAgent">Upstream User-Agent</label>
+                        <input is="emby-input" id="UpstreamUserAgent" name="UpstreamUserAgent" type="text" />
+                        <div class="fieldDescription">Used by Jellystream proxy requests and written as <code>#EXTVLCOPT</code> in generated playlists.</div>
                     </div>
 
                     <div class="inputContainer">
@@ -103,9 +119,11 @@
                         setValue(page, 'AceStreamApiBaseUrl', config.AceStreamApiBaseUrl || 'https://acestream.gianni.re');
                         setValue(page, 'AceStreamPlaybackBaseUrl', config.AceStreamPlaybackBaseUrl || 'https://acestream.gianni.re');
                         setValue(page, 'PlaybackUrlTemplate', config.PlaybackUrlTemplate || '/ace/getstream?id={contentId}');
+                        setValue(page, 'PlaylistStreamMode', config.PlaylistStreamMode == null ? 0 : config.PlaylistStreamMode);
                         setValue(page, 'StreamOutputPreference', config.StreamOutputPreference == null ? 0 : config.StreamOutputPreference);
                         setChecked(page, 'FireTvCompatibilityMode', config.FireTvCompatibilityMode !== false);
-                        setChecked(page, 'ProxyStreams', config.ProxyStreams !== false);
+                        setChecked(page, 'ProxyStreams', config.ProxyStreams === true);
+                        setValue(page, 'UpstreamUserAgent', config.UpstreamUserAgent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36');
                         setValue(page, 'PrebufferTimeoutSeconds', config.PrebufferTimeoutSeconds || 15);
                         setValue(page, 'MaxConcurrentStreams', config.MaxConcurrentStreams || 2);
                         setValue(page, 'InlineM3U', config.InlineM3U || '#EXTM3U');
@@ -127,9 +145,11 @@
                         config.AceStreamApiBaseUrl = form.AceStreamApiBaseUrl.value.trim();
                         config.AceStreamPlaybackBaseUrl = form.AceStreamPlaybackBaseUrl.value.trim();
                         config.PlaybackUrlTemplate = form.PlaybackUrlTemplate.value.trim();
+                        config.PlaylistStreamMode = parseInt(form.PlaylistStreamMode.value, 10);
                         config.StreamOutputPreference = parseInt(form.StreamOutputPreference.value, 10);
                         config.FireTvCompatibilityMode = form.FireTvCompatibilityMode.checked;
                         config.ProxyStreams = form.ProxyStreams.checked;
+                        config.UpstreamUserAgent = form.UpstreamUserAgent.value.trim();
                         config.PrebufferTimeoutSeconds = parseInt(form.PrebufferTimeoutSeconds.value, 10) || 15;
                         config.MaxConcurrentStreams = parseInt(form.MaxConcurrentStreams.value, 10) || 2;
                         config.InlineM3U = form.InlineM3U.value || '#EXTM3U';

@@ -62,17 +62,19 @@ public sealed class JellystreamController : ControllerBase
     public async Task<IActionResult> GetPlaylist(CancellationToken cancellationToken)
     {
         var channels = await _channelProvider.GetChannelsAsync(cancellationToken).ConfigureAwait(false);
+        var configuration = GetConfiguration();
         var builder = new StringBuilder("#EXTM3U\n");
 
         foreach (var channel in channels)
         {
-            var streamUrl = BuildAbsoluteUrl($"Jellystream/Stream/{Uri.EscapeDataString(channel.Id)}");
+            var streamUrl = BuildStreamUrl(channel, configuration);
             builder.Append("#EXTINF:-1");
             AppendAttribute(builder, "tvg-id", channel.TvgId);
             AppendAttribute(builder, "tvg-name", channel.Name);
             AppendAttribute(builder, "tvg-logo", channel.LogoUrl);
             AppendAttribute(builder, "group-title", channel.Group);
             builder.Append(',').Append(channel.Name).Append('\n');
+            AppendVlcOption(builder, "http-user-agent", configuration.UpstreamUserAgent);
             builder.Append(streamUrl).Append('\n');
         }
 
@@ -128,6 +130,50 @@ public sealed class JellystreamController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Redirects a raw AceStream content id to the resolved AceStream playback URL.
+    /// </summary>
+    [HttpGet("RedirectByContentId/{contentId}")]
+    public IActionResult RedirectContentId(string contentId)
+    {
+        try
+        {
+            var playback = _aceStreamClient.ResolvePlayback(contentId);
+            return Redirect(playback.PlaybackUri.ToString());
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Resolves a channel id to its upstream AceStream playback URL for diagnostics.
+    /// </summary>
+    [HttpGet("Resolve/{channelId}")]
+    public async Task<IActionResult> ResolveChannel(string channelId, CancellationToken cancellationToken)
+    {
+        var channels = await _channelProvider.GetChannelsAsync(cancellationToken).ConfigureAwait(false);
+        var channel = channels.FirstOrDefault(candidate => string.Equals(candidate.Id, channelId, StringComparison.OrdinalIgnoreCase));
+        if (channel is null)
+        {
+            return NotFound("Unknown Jellystream channel.");
+        }
+
+        var playback = _aceStreamClient.ResolvePlayback(channel.ContentId);
+        return Ok(new { channel.Id, channel.Name, channel.ContentId, PlaybackUrl = playback.PlaybackUri.ToString() });
+    }
+
+    private string BuildStreamUrl(JellystreamChannel channel, PluginConfiguration configuration)
+    {
+        return configuration.PlaylistStreamMode switch
+        {
+            PlaylistStreamMode.Direct => _aceStreamClient.ResolvePlayback(channel.ContentId).PlaybackUri.ToString(),
+            PlaylistStreamMode.Redirect => BuildAbsoluteUrl($"Jellystream/RedirectByContentId/{Uri.EscapeDataString(channel.ContentId)}"),
+            _ => BuildAbsoluteUrl($"Jellystream/Stream/{Uri.EscapeDataString(channel.Id)}")
+        };
+    }
+
     private string BuildAbsoluteUrl(string path)
     {
         var request = HttpContext.Request;
@@ -143,6 +189,16 @@ public sealed class JellystreamController : ControllerBase
         }
 
         builder.Append(' ').Append(name).Append("=\"").Append(value.Replace("\"", string.Empty, StringComparison.Ordinal)).Append('"');
+    }
+
+    private static void AppendVlcOption(StringBuilder builder, string name, string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        builder.Append("#EXTVLCOPT:").Append(name).Append('=').Append(value.Replace("\r", string.Empty, StringComparison.Ordinal).Replace("\n", string.Empty, StringComparison.Ordinal)).Append('\n');
     }
 
     private static PluginConfiguration GetConfiguration()

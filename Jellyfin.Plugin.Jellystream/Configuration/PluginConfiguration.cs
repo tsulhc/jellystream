@@ -23,6 +23,16 @@ public sealed class PluginConfiguration : BasePluginConfiguration
     public string PlaybackUrlTemplate { get; set; } = "/ace/getstream?id={contentId}";
 
     /// <summary>
+    /// Gets or sets how generated M3U entries should point to streams.
+    /// </summary>
+    public PlaylistStreamMode PlaylistStreamMode { get; set; } = PlaylistStreamMode.Direct;
+
+    /// <summary>
+    /// Gets or sets the upstream user-agent used when Jellystream talks to AceStream.
+    /// </summary>
+    public string UpstreamUserAgent { get; set; } = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
+
+    /// <summary>
     /// Gets or sets a value indicating whether Jellystream should proxy playback through Jellyfin.
     /// </summary>
     public bool ProxyStreams { get; set; } = true;
@@ -87,4 +97,25 @@ public enum StreamOutputPreference
     /// Prefer MPEG-TS over HTTP.
     /// </summary>
     MpegTs
+}
+
+/// <summary>
+/// Defines how Jellystream writes stream URLs in generated M3U playlists.
+/// </summary>
+public enum PlaylistStreamMode
+{
+    /// <summary>
+    /// Write AceStream playback URLs directly in the generated M3U playlist.
+    /// </summary>
+    Direct,
+
+    /// <summary>
+    /// Write Jellystream proxy URLs in the generated M3U playlist.
+    /// </summary>
+    Proxy,
+
+    /// <summary>
+    /// Write Jellystream URLs that redirect to AceStream playback URLs.
+    /// </summary>
+    Redirect
 }

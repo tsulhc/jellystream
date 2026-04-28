@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
 using Jellyfin.Plugin.Jellystream.Configuration;
 using Jellyfin.Plugin.Jellystream.Models;
@@ -73,7 +72,7 @@ public sealed partial class AceStreamClient : IAceStreamClient
         timeout.CancelAfter(TimeSpan.FromSeconds(Math.Max(5, configuration.PrebufferTimeoutSeconds)));
 
         var request = new HttpRequestMessage(HttpMethod.Get, playback.PlaybackUri);
-        request.Headers.UserAgent.Add(new ProductInfoHeaderValue("Jellystream", "0.1.0"));
+        request.Headers.UserAgent.ParseAdd(string.IsNullOrWhiteSpace(configuration.UpstreamUserAgent) ? "Jellystream/0.1.2" : configuration.UpstreamUserAgent);
 
         var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)

@@ -8,6 +8,14 @@
     "category": "LiveTV",
     "versions": [
       {
+        "version": "0.1.2.0",
+        "changelog": "Add per-playlist stream mode with Direct AceStream URL, Redirect and Proxy options so Jellystream Live TV can avoid plugin proxying without changing global Jellyfin playback settings.",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/tsulhc/jellystream/main/repository/jellystream_0.1.2.0.zip",
+        "checksum": "297e02024deda18def3dbb62fe2373d8",
+        "timestamp": "2026-04-28T15:30:00Z"
+      },
+      {
         "version": "0.1.1.0",
         "changelog": "Add Jellyfin dashboard configuration page for AceStream URLs, Fire TV mode, stream proxying and inline M3U.",
         "targetAbi": "10.11.0.0",
