@@ -206,7 +206,7 @@ Dashboard -> Plugins -> Repositories -> Add
 
 After adding the repository, open the plugin catalog, install `Jellystream`, and restart Jellyfin.
 
-Release packages are published as GitHub release assets. The manifest points to the latest compatible zip and includes Jellyfin's required MD5 checksum.
+Release packages are stored under `repository/`. The manifest points to the latest compatible zip and includes Jellyfin's required MD5 checksum.
 
 ## Package A Release
 
