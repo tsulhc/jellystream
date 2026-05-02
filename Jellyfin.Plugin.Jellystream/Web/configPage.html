@@ -2,6 +2,59 @@
 <html>
 <head>
     <title>Jellystream</title>
+    <style>
+        .jellystreamChannelsToolbar {
+            display: flex;
+            gap: 1em;
+            margin: 1em 0;
+            flex-wrap: wrap;
+        }
+
+        .jellystreamChannelCard {
+            border: 1px solid rgba(255, 255, 255, .14);
+            border-radius: .4em;
+            margin: .75em 0;
+            padding: .9em;
+        }
+
+        .jellystreamChannelHeader {
+            display: flex;
+            align-items: center;
+            gap: .75em;
+            margin-bottom: .75em;
+        }
+
+        .jellystreamChannelLogo {
+            width: 3em;
+            height: 3em;
+            object-fit: contain;
+            background: rgba(255, 255, 255, .08);
+            border-radius: .3em;
+        }
+
+        .jellystreamChannelTitle {
+            font-weight: 600;
+        }
+
+        .jellystreamChannelMeta {
+            opacity: .72;
+            font-size: .9em;
+            word-break: break-all;
+        }
+
+        .jellystreamChannelGrid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(12em, 1fr));
+            gap: .75em;
+        }
+
+        .jellystreamChannelFlags {
+            display: flex;
+            gap: 1em;
+            flex-wrap: wrap;
+            margin-top: .75em;
+        }
+    </style>
 </head>
 <body>
     <div id="JellystreamConfigPage" data-role="page" class="page type-interior pluginConfigurationPage">
@@ -116,6 +169,21 @@
                     <li>M3U endpoint: <code>/Jellystream/Playlist.m3u</code></li>
                     <li>Healthcheck endpoint: <code>/Jellystream/Health</code></li>
                 </ul>
+
+                <h2>Channel Management</h2>
+                <p>Manual Fire TV curation. Favorites are duplicated into a dedicated <code>Favorites</code> group while remaining in their original group.</p>
+
+                <div class="jellystreamChannelsToolbar">
+                    <button is="emby-button" type="button" id="JellystreamRefreshChannels" class="raised">
+                        <span>Refresh Channels</span>
+                    </button>
+                    <button is="emby-button" type="button" id="JellystreamSaveChannels" class="raised button-submit">
+                        <span>Save Channel Settings</span>
+                    </button>
+                </div>
+
+                <div id="JellystreamChannelCount" class="fieldDescription"></div>
+                <div id="JellystreamChannels"></div>
             </div>
         </div>
 
@@ -157,6 +225,96 @@
                     return Array.isArray(value) ? value.join('\n') : '';
                 }
 
+                function escapeHtml(value) {
+                    return String(value == null ? '' : value).replace(/[&<>"]/g, function (character) {
+                        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[character];
+                    });
+                }
+
+                function getOverridesByContentId(config) {
+                    const values = {};
+                    (config.ChannelOverrides || []).forEach(function (item) {
+                        if (item && item.ContentId) {
+                            values[item.ContentId.toLowerCase()] = item;
+                        }
+                    });
+                    return values;
+                }
+
+                function getEffectiveValue(channel, override, key) {
+                    return override && override[key] ? override[key] : channel[key];
+                }
+
+                function renderChannels(page) {
+                    const container = page.querySelector('#JellystreamChannels');
+                    const count = page.querySelector('#JellystreamChannelCount');
+                    const config = page._jellystreamConfig || {};
+                    const channels = page._jellystreamChannels || [];
+                    const overrides = getOverridesByContentId(config);
+
+                    count.textContent = channels.length + ' aggregated channel' + (channels.length === 1 ? '' : 's') + ' found.';
+
+                    if (!channels.length) {
+                        container.innerHTML = '<p>No channels found. Add an inline, remote, or local M3U source and save first.</p>';
+                        return;
+                    }
+
+                    container.innerHTML = channels.map(function (channel) {
+                        const override = overrides[(channel.ContentId || '').toLowerCase()] || {};
+                        const logo = getEffectiveValue(channel, override, 'LogoUrl');
+                        const name = getEffectiveValue(channel, override, 'Name');
+                        const group = getEffectiveValue(channel, override, 'Group') || 'Other';
+                        const contentId = channel.ContentId || '';
+
+                        return '<div class="jellystreamChannelCard" data-content-id="' + escapeHtml(contentId) + '">'
+                            + '<div class="jellystreamChannelHeader">'
+                            + (logo ? '<img class="jellystreamChannelLogo" src="' + escapeHtml(logo) + '" alt="" />' : '<div class="jellystreamChannelLogo"></div>')
+                            + '<div><div class="jellystreamChannelTitle">' + escapeHtml(name) + '</div>'
+                            + '<div class="jellystreamChannelMeta">' + escapeHtml(group) + ' · ' + escapeHtml(contentId) + '</div></div>'
+                            + '</div>'
+                            + '<div class="jellystreamChannelGrid">'
+                            + '<div><label class="inputLabel inputLabelUnfocused">Name</label><input is="emby-input" class="js-channel-name" type="text" value="' + escapeHtml(override.Name || '') + '" placeholder="' + escapeHtml(channel.Name || '') + '" /></div>'
+                            + '<div><label class="inputLabel inputLabelUnfocused">Group</label><input is="emby-input" class="js-channel-group" type="text" value="' + escapeHtml(override.Group || '') + '" placeholder="' + escapeHtml(channel.Group || 'Other') + '" /></div>'
+                            + '<div><label class="inputLabel inputLabelUnfocused">Logo URL</label><input is="emby-input" class="js-channel-logo" type="url" value="' + escapeHtml(override.LogoUrl || '') + '" placeholder="' + escapeHtml(channel.LogoUrl || '') + '" /></div>'
+                            + '<div><label class="inputLabel inputLabelUnfocused">Sort order</label><input is="emby-input" class="js-channel-sort" type="number" min="0" value="' + escapeHtml(override.SortOrder || '') + '" placeholder="Auto" /></div>'
+                            + '</div>'
+                            + '<div class="jellystreamChannelFlags">'
+                            + '<label><input is="emby-checkbox" class="js-channel-favorite" type="checkbox" ' + (override.IsFavorite ? 'checked' : '') + ' /> Favorite</label>'
+                            + '<label><input is="emby-checkbox" class="js-channel-hidden" type="checkbox" ' + (override.IsHidden ? 'checked' : '') + ' /> Hidden</label>'
+                            + '</div>'
+                            + '</div>';
+                    }).join('');
+                }
+
+                function loadChannels(page) {
+                    return ApiClient.ajax({
+                        type: 'GET',
+                        url: ApiClient.getUrl('Jellystream/Channels'),
+                        dataType: 'json'
+                    }).then(function (channels) {
+                        page._jellystreamChannels = channels || [];
+                        renderChannels(page);
+                    });
+                }
+
+                function readChannelOverrides(page) {
+                    return Array.prototype.slice.call(page.querySelectorAll('.jellystreamChannelCard')).map(function (card) {
+                        const item = {
+                            ContentId: card.getAttribute('data-content-id'),
+                            IsFavorite: card.querySelector('.js-channel-favorite').checked,
+                            IsHidden: card.querySelector('.js-channel-hidden').checked,
+                            Name: card.querySelector('.js-channel-name').value.trim(),
+                            Group: card.querySelector('.js-channel-group').value.trim(),
+                            LogoUrl: card.querySelector('.js-channel-logo').value.trim(),
+                            SortOrder: parseInt(card.querySelector('.js-channel-sort').value, 10) || 0
+                        };
+
+                        return item;
+                    }).filter(function (item) {
+                        return item.IsFavorite || item.IsHidden || item.Name || item.Group || item.LogoUrl || item.SortOrder > 0;
+                    });
+                }
+
                 function loadConfig(page) {
                     Dashboard.showLoadingMsg();
                     ApiClient.getPluginConfiguration(pluginId).then(function (config) {
@@ -174,6 +332,8 @@
                         setValue(page, 'PlaylistSources', arrayToLines(config.PlaylistSources));
                         setValue(page, 'AllowedPlaylistHosts', arrayToLines(config.AllowedPlaylistHosts));
                         setValue(page, 'LocalPlaylistFiles', arrayToLines(config.LocalPlaylistFiles));
+                        page._jellystreamConfig = config;
+                        loadChannels(page);
                         Dashboard.hideLoadingMsg();
                     });
                 }
@@ -203,7 +363,28 @@
                         config.PlaylistSources = linesToArray(form.PlaylistSources.value);
                         config.AllowedPlaylistHosts = linesToArray(form.AllowedPlaylistHosts.value);
                         config.LocalPlaylistFiles = linesToArray(form.LocalPlaylistFiles.value);
+                        config.ChannelOverrides = page._jellystreamConfig && page._jellystreamConfig.ChannelOverrides || [];
 
+                        ApiClient.updatePluginConfiguration(pluginId, config).then(function () {
+                            Dashboard.processPluginConfigurationUpdateResult();
+                            loadConfig(page);
+                        });
+                    });
+                });
+
+                document.querySelector('#JellystreamRefreshChannels').addEventListener('click', function () {
+                    const page = this.closest('.page');
+                    Dashboard.showLoadingMsg();
+                    loadChannels(page).then(function () {
+                        Dashboard.hideLoadingMsg();
+                    });
+                });
+
+                document.querySelector('#JellystreamSaveChannels').addEventListener('click', function () {
+                    const page = this.closest('.page');
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        config.ChannelOverrides = readChannelOverrides(page);
                         ApiClient.updatePluginConfiguration(pluginId, config).then(function () {
                             Dashboard.processPluginConfigurationUpdateResult();
                             loadConfig(page);

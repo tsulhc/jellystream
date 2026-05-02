@@ -81,6 +81,52 @@ public sealed class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets remote playlist URLs.
     /// </summary>
     public string[] PlaylistSources { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets manual per-channel display preferences.
+    /// </summary>
+    public ChannelOverride[] ChannelOverrides { get; set; } = [];
+}
+
+/// <summary>
+/// Manual display preferences for a channel identified by AceStream content id.
+/// </summary>
+public sealed class ChannelOverride
+{
+    /// <summary>
+    /// Gets or sets the AceStream content id.
+    /// </summary>
+    public string ContentId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the channel should be hidden.
+    /// </summary>
+    public bool IsHidden { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the channel should be duplicated in Favorites.
+    /// </summary>
+    public bool IsFavorite { get; set; }
+
+    /// <summary>
+    /// Gets or sets the optional display name override.
+    /// </summary>
+    public string? Name { get; set; }
+
+    /// <summary>
+    /// Gets or sets the optional group override.
+    /// </summary>
+    public string? Group { get; set; }
+
+    /// <summary>
+    /// Gets or sets the optional logo URL override.
+    /// </summary>
+    public string? LogoUrl { get; set; }
+
+    /// <summary>
+    /// Gets or sets the manual sort order.
+    /// </summary>
+    public int SortOrder { get; set; }
 }
 
 /// <summary>

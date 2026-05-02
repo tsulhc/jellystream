@@ -8,11 +8,11 @@
     "category": "LiveTV",
     "versions": [
       {
-        "version": "0.1.4.0",
-        "changelog": "Persist stream mode settings correctly and aggregate channels from inline, remote and local M3U playlists.",
+        "version": "0.1.5.0",
+        "changelog": "Add Fire TV-friendly channel management with favorites, hidden channels, manual names, groups, logos and sort order.",
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/tsulhc/jellystream/main/repository/jellystream_0.1.4.0.zip",
-        "checksum": "e645b36144bc48c184fb0738a38f7b00",
+        "sourceUrl": "https://raw.githubusercontent.com/tsulhc/jellystream/main/repository/jellystream_0.1.5.0.zip",
+        "checksum": "66e30cfeb5769b3b6235d656a2cf9e4a",
         "timestamp": "2026-05-02T00:00:00Z"
       }
     ]

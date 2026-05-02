@@ -65,7 +65,7 @@ public sealed class JellystreamController : ControllerBase
         var configuration = GetConfiguration();
         var builder = new StringBuilder("#EXTM3U\n");
 
-        foreach (var channel in channels)
+        foreach (var channel in BuildPlaylistChannels(channels, configuration))
         {
             var streamUrl = BuildStreamUrl(channel, configuration);
             builder.Append("#EXTINF:-1");
@@ -172,6 +172,47 @@ public sealed class JellystreamController : ControllerBase
             PlaylistStreamMode.Redirect => BuildAbsoluteUrl($"Jellystream/RedirectByContentId/{Uri.EscapeDataString(channel.ContentId)}"),
             _ => BuildAbsoluteUrl($"Jellystream/Stream/{Uri.EscapeDataString(channel.Id)}")
         };
+    }
+
+    private static IReadOnlyList<JellystreamChannel> BuildPlaylistChannels(IReadOnlyList<JellystreamChannel> channels, PluginConfiguration configuration)
+    {
+        var overrides = configuration.ChannelOverrides
+            .Where(static item => !string.IsNullOrWhiteSpace(item.ContentId))
+            .GroupBy(static item => item.ContentId, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(static group => group.Key, static group => group.Last(), StringComparer.OrdinalIgnoreCase);
+
+        var visibleChannels = channels
+            .Select(channel => ApplyOverride(channel, overrides.GetValueOrDefault(channel.ContentId)))
+            .Where(static item => item.Override?.IsHidden != true)
+            .OrderBy(static item => item.Override?.SortOrder > 0 ? item.Override.SortOrder : int.MaxValue)
+            .ThenBy(static item => item.Channel.Group, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(static item => item.Channel.Name, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        var playlistChannels = new List<JellystreamChannel>();
+        playlistChannels.AddRange(visibleChannels
+            .Where(static item => item.Override?.IsFavorite == true)
+            .Select(static item => item.Channel with { Group = "Favorites" }));
+        playlistChannels.AddRange(visibleChannels.Select(static item => item.Channel));
+
+        return playlistChannels;
+    }
+
+    private static (JellystreamChannel Channel, ChannelOverride? Override) ApplyOverride(JellystreamChannel channel, ChannelOverride? channelOverride)
+    {
+        if (channelOverride is null)
+        {
+            return (channel, null);
+        }
+
+        var overridden = channel with
+        {
+            Name = string.IsNullOrWhiteSpace(channelOverride.Name) ? channel.Name : channelOverride.Name.Trim(),
+            Group = string.IsNullOrWhiteSpace(channelOverride.Group) ? channel.Group : channelOverride.Group.Trim(),
+            LogoUrl = string.IsNullOrWhiteSpace(channelOverride.LogoUrl) ? channel.LogoUrl : channelOverride.LogoUrl.Trim()
+        };
+
+        return (overridden, channelOverride);
     }
 
     private string BuildAbsoluteUrl(string path)

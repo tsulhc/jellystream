@@ -166,8 +166,9 @@ The repository now contains the first server-side MVP scaffold:
 - Channel listing endpoint at `/Jellystream/Channels`.
 - Stream endpoint at `/Jellystream/Stream/{channelId}`.
 - Diagnostic raw stream endpoint at `/Jellystream/StreamByContentId/{contentId}`.
+- Manual channel management for Fire TV-friendly curation: favorites, hidden channels, custom names, groups, logos and sort order.
 
-The default playback mode is proxied through Jellyfin. This is intentional for Fire TV because the Fire TV app should only communicate with Jellyfin, not directly with AceStream or Docker-internal addresses.
+The default playlist mode writes direct AceStream playback URLs into Jellyfin's M3U tuner source. Proxy and redirect modes remain available for diagnostics and compatibility testing.
 
 ## Build
 
@@ -240,6 +241,8 @@ Maximum concurrent streams: 2
 
 Channels are aggregated from all configured sources: the inline M3U field, remote M3U playlist URLs, and local M3U files readable by the Jellyfin server/container. Duplicate AceStream content ids are kept only once.
 
+Use Channel Management to curate the generated Live TV playlist for Fire TV. Favorite channels are duplicated into a dedicated `Favorites` group while also staying in their original group. Hidden channels are excluded from the generated M3U.
+
 For Docker deployments with an externally reachable AceStream bridge, `Direct AceStream URL` lets Jellyfin manage the source exactly like a normal M3U tuner source.
 
 If your AceStream bridge uses a different route, change only `Playback URL template`. For example, if direct playback works at `https://acestream.example.com/stream/CONTENT_ID`, use:
@@ -253,14 +256,14 @@ If your AceStream bridge uses a different route, change only `Playback URL templ
 Create a local release zip and checksum with:
 
 ```bash
-bash scripts/package-plugin.sh 0.1.4.0
+bash scripts/package-plugin.sh 0.1.5.0
 ```
 
 This writes:
 
 ```text
-dist/jellystream_0.1.4.0.zip
-dist/jellystream_0.1.4.0.zip.md5
+dist/jellystream_0.1.5.0.zip
+dist/jellystream_0.1.5.0.zip.md5
 ```
 
 ## First Manual Test
