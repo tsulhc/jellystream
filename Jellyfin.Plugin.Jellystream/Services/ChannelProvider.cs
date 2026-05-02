@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 namespace Jellyfin.Plugin.Jellystream.Services;
 
 /// <summary>
-/// Loads channels from inline and remote playlists.
+/// Loads channels from inline, remote and local playlists.
 /// </summary>
 public sealed class ChannelProvider : IChannelProvider
 {
@@ -30,6 +30,19 @@ public sealed class ChannelProvider : IChannelProvider
         var channels = new List<JellystreamChannel>();
 
         channels.AddRange(_parser.Parse(configuration.InlineM3U));
+
+        foreach (var path in configuration.LocalPlaylistFiles.Where(static path => !string.IsNullOrWhiteSpace(path)))
+        {
+            try
+            {
+                var playlist = await File.ReadAllTextAsync(path.Trim(), cancellationToken).ConfigureAwait(false);
+                channels.AddRange(_parser.Parse(playlist));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or OperationCanceledException)
+            {
+                _logger.LogWarning(ex, "Failed to load local playlist file: {Path}", path);
+            }
+        }
 
         foreach (var source in configuration.PlaylistSources.Where(static source => !string.IsNullOrWhiteSpace(source)))
         {
@@ -77,11 +90,33 @@ public sealed class ChannelProvider : IChannelProvider
             return false;
         }
 
-        if (configuration.AllowedPlaylistHosts.Length == 0)
+        if (IsPrivateOrLocalHost(uri.Host))
         {
-            return false;
+            return configuration.AllowedPlaylistHosts.Any(host => string.Equals(host, uri.Host, StringComparison.OrdinalIgnoreCase));
         }
 
-        return configuration.AllowedPlaylistHosts.Any(host => string.Equals(host, uri.Host, StringComparison.OrdinalIgnoreCase));
+        return true;
+    }
+
+    private static bool IsPrivateOrLocalHost(string host)
+    {
+        if (string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (!System.Net.IPAddress.TryParse(host, out var address))
+        {
+            return host.EndsWith(".local", StringComparison.OrdinalIgnoreCase)
+                || host.EndsWith(".lan", StringComparison.OrdinalIgnoreCase)
+                || !host.Contains('.', StringComparison.Ordinal);
+        }
+
+        var bytes = address.GetAddressBytes();
+        return System.Net.IPAddress.IsLoopback(address)
+            || bytes[0] == 10
+            || (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31)
+            || (bytes[0] == 192 && bytes[1] == 168)
+            || (bytes[0] == 169 && bytes[1] == 254);
     }
 }

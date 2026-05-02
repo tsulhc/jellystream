@@ -238,6 +238,8 @@ Maximum concurrent streams: 2
 
 `Playlist stream mode` affects only Jellystream Live TV channels. It does not change Jellyfin playback settings for movies or series.
 
+Channels are aggregated from all configured sources: the inline M3U field, remote M3U playlist URLs, and local M3U files readable by the Jellyfin server/container. Duplicate AceStream content ids are kept only once.
+
 For Docker deployments with an externally reachable AceStream bridge, `Direct AceStream URL` lets Jellyfin manage the source exactly like a normal M3U tuner source.
 
 If your AceStream bridge uses a different route, change only `Playback URL template`. For example, if direct playback works at `https://acestream.example.com/stream/CONTENT_ID`, use:
@@ -251,14 +253,14 @@ If your AceStream bridge uses a different route, change only `Playback URL templ
 Create a local release zip and checksum with:
 
 ```bash
-bash scripts/package-plugin.sh 0.1.0.0
+bash scripts/package-plugin.sh 0.1.4.0
 ```
 
 This writes:
 
 ```text
-dist/jellystream_0.1.0.0.zip
-dist/jellystream_0.1.0.0.zip.md5
+dist/jellystream_0.1.4.0.zip
+dist/jellystream_0.1.4.0.zip.md5
 ```
 
 ## First Manual Test

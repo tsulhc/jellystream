@@ -32,9 +32,9 @@
                     <div class="selectContainer">
                         <label class="selectLabel" for="PlaylistStreamMode">Playlist stream mode</label>
                         <select is="emby-select" id="PlaylistStreamMode" name="PlaylistStreamMode">
-                            <option value="0">Direct AceStream URL</option>
-                            <option value="1">Proxy through Jellyfin</option>
-                            <option value="2">Redirect through Jellystream</option>
+                            <option value="Direct">Direct AceStream URL</option>
+                            <option value="Proxy">Proxy through Jellyfin</option>
+                            <option value="Redirect">Redirect through Jellystream</option>
                         </select>
                         <div class="fieldDescription">Use Direct AceStream URL for this Docker setup. It affects only Jellystream Live TV channels, not movies or series playback.</div>
                     </div>
@@ -42,9 +42,9 @@
                     <div class="selectContainer">
                         <label class="selectLabel" for="StreamOutputPreference">Stream output preference</label>
                         <select is="emby-select" id="StreamOutputPreference" name="StreamOutputPreference">
-                            <option value="0">Auto</option>
-                            <option value="1">HLS</option>
-                            <option value="2">MPEG-TS</option>
+                            <option value="Auto">Auto</option>
+                            <option value="Hls">HLS</option>
+                            <option value="MpegTs">MPEG-TS</option>
                         </select>
                     </div>
 
@@ -83,7 +83,25 @@
                     <div class="inputContainer">
                         <label class="inputLabel inputLabelUnfocused" for="InlineM3U">Inline M3U playlist</label>
                         <textarea is="emby-textarea" id="InlineM3U" name="InlineM3U" rows="10"></textarea>
-                        <div class="fieldDescription">Paste AceStream channels here while remote playlist management is still minimal.</div>
+                        <div class="fieldDescription">Paste individual channels or a full M3U playlist here.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="PlaylistSources">Remote M3U playlist URLs</label>
+                        <textarea is="emby-textarea" id="PlaylistSources" name="PlaylistSources" rows="5"></textarea>
+                        <div class="fieldDescription">One HTTP/HTTPS playlist URL per line. Public hosts are accepted directly; local/private hosts must also be listed in the allowlist below.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="AllowedPlaylistHosts">Allowed local/private playlist hosts</label>
+                        <textarea is="emby-textarea" id="AllowedPlaylistHosts" name="AllowedPlaylistHosts" rows="3"></textarea>
+                        <div class="fieldDescription">One hostname per line, for example <code>192.168.1.10</code> or <code>playlist.local</code>. Required only for local/private remote playlist URLs.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="LocalPlaylistFiles">Local M3U playlist files</label>
+                        <textarea is="emby-textarea" id="LocalPlaylistFiles" name="LocalPlaylistFiles" rows="5"></textarea>
+                        <div class="fieldDescription">One file path per line, readable from the Jellyfin server/container, for example <code>/config/playlists/sports.m3u</code>.</div>
                     </div>
 
                     <div>
@@ -113,20 +131,49 @@
                     page.querySelector('#' + id).checked = !!value;
                 }
 
+                function normalizeEnum(value, names, fallback) {
+                    if (value == null) {
+                        return fallback;
+                    }
+
+                    if (typeof value === 'number') {
+                        return names[value] || fallback;
+                    }
+
+                    if (/^\d+$/.test(value)) {
+                        return names[parseInt(value, 10)] || fallback;
+                    }
+
+                    return names.indexOf(value) >= 0 ? value : fallback;
+                }
+
+                function linesToArray(value) {
+                    return (value || '').split(/\r?\n/).map(function (line) {
+                        return line.trim();
+                    }).filter(Boolean);
+                }
+
+                function arrayToLines(value) {
+                    return Array.isArray(value) ? value.join('\n') : '';
+                }
+
                 function loadConfig(page) {
                     Dashboard.showLoadingMsg();
                     ApiClient.getPluginConfiguration(pluginId).then(function (config) {
                         setValue(page, 'AceStreamApiBaseUrl', config.AceStreamApiBaseUrl || 'http://127.0.0.1:6878');
                         setValue(page, 'AceStreamPlaybackBaseUrl', config.AceStreamPlaybackBaseUrl || 'http://127.0.0.1:6878');
                         setValue(page, 'PlaybackUrlTemplate', config.PlaybackUrlTemplate || '/ace/getstream?id={contentId}');
-                        setValue(page, 'PlaylistStreamMode', config.PlaylistStreamMode == null ? 0 : config.PlaylistStreamMode);
-                        setValue(page, 'StreamOutputPreference', config.StreamOutputPreference == null ? 0 : config.StreamOutputPreference);
+                        setValue(page, 'PlaylistStreamMode', normalizeEnum(config.PlaylistStreamMode, ['Direct', 'Proxy', 'Redirect'], 'Direct'));
+                        setValue(page, 'StreamOutputPreference', normalizeEnum(config.StreamOutputPreference, ['Auto', 'Hls', 'MpegTs'], 'Auto'));
                         setChecked(page, 'FireTvCompatibilityMode', config.FireTvCompatibilityMode !== false);
                         setChecked(page, 'ProxyStreams', config.ProxyStreams === true);
                         setValue(page, 'UpstreamUserAgent', config.UpstreamUserAgent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36');
                         setValue(page, 'PrebufferTimeoutSeconds', config.PrebufferTimeoutSeconds || 15);
                         setValue(page, 'MaxConcurrentStreams', config.MaxConcurrentStreams || 2);
                         setValue(page, 'InlineM3U', config.InlineM3U || '#EXTM3U');
+                        setValue(page, 'PlaylistSources', arrayToLines(config.PlaylistSources));
+                        setValue(page, 'AllowedPlaylistHosts', arrayToLines(config.AllowedPlaylistHosts));
+                        setValue(page, 'LocalPlaylistFiles', arrayToLines(config.LocalPlaylistFiles));
                         Dashboard.hideLoadingMsg();
                     });
                 }
@@ -145,14 +192,17 @@
                         config.AceStreamApiBaseUrl = form.AceStreamApiBaseUrl.value.trim();
                         config.AceStreamPlaybackBaseUrl = form.AceStreamPlaybackBaseUrl.value.trim();
                         config.PlaybackUrlTemplate = form.PlaybackUrlTemplate.value.trim();
-                        config.PlaylistStreamMode = parseInt(form.PlaylistStreamMode.value, 10);
-                        config.StreamOutputPreference = parseInt(form.StreamOutputPreference.value, 10);
+                        config.PlaylistStreamMode = form.PlaylistStreamMode.value;
+                        config.StreamOutputPreference = form.StreamOutputPreference.value;
                         config.FireTvCompatibilityMode = form.FireTvCompatibilityMode.checked;
                         config.ProxyStreams = form.ProxyStreams.checked;
                         config.UpstreamUserAgent = form.UpstreamUserAgent.value.trim();
                         config.PrebufferTimeoutSeconds = parseInt(form.PrebufferTimeoutSeconds.value, 10) || 15;
                         config.MaxConcurrentStreams = parseInt(form.MaxConcurrentStreams.value, 10) || 2;
                         config.InlineM3U = form.InlineM3U.value || '#EXTM3U';
+                        config.PlaylistSources = linesToArray(form.PlaylistSources.value);
+                        config.AllowedPlaylistHosts = linesToArray(form.AllowedPlaylistHosts.value);
+                        config.LocalPlaylistFiles = linesToArray(form.LocalPlaylistFiles.value);
 
                         ApiClient.updatePluginConfiguration(pluginId, config).then(function () {
                             Dashboard.processPluginConfigurationUpdateResult();

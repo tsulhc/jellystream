@@ -68,6 +68,11 @@ public sealed class PluginConfiguration : BasePluginConfiguration
     public string InlineM3U { get; set; } = "#EXTM3U";
 
     /// <summary>
+    /// Gets or sets local M3U playlist file paths readable by the Jellyfin server.
+    /// </summary>
+    public string[] LocalPlaylistFiles { get; set; } = [];
+
+    /// <summary>
     /// Gets or sets allowed remote playlist hostnames.
     /// </summary>
     public string[] AllowedPlaylistHosts { get; set; } = [];
